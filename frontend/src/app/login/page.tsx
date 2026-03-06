@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,46 +17,54 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+  
+  const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  try {
     setError("");
     setShowError(false);
+    setLoading(true);
 
-    const body = new URLSearchParams();
-    body.append("username", email);
-    body.append("password", password);
+    const formData = new URLSearchParams();
+    formData.append("username", email);
+    formData.append("password", password);
 
-    try {
-      const res = await fetch("http://localhost:8000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      });
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.detail || "Invalid credentials. Please try again.");
-      }
-
-      const data = await res.json();
-
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("role", data.role);
-
-      if (data.role === "admin") router.push("/admin");
-      else if (data.role === "mess_incharge") router.push("/mess");
-      else router.push("/student");
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Something went wrong.";
-      setError(message);
-      setShowError(true);
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      throw new Error("Invalid credentials or server error");
     }
-  };
 
+    const data = await res.json();
+
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("role", data.role);
+    localStorage.setItem("ann_name", email.split("@")[0]);
+
+    if (data.role === "student") {
+      router.replace("/student");
+    } else if (data.role === "mess" || data.role === "mess_incharge") {
+      router.replace("/mess");
+    } else if (data.role === "admin") {
+      router.replace("/admin");
+    } else {
+      router.replace("/login");
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    setError("Failed to fetch or invalid login");
+    setShowError(true);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <>
       <style>{`
@@ -682,7 +691,7 @@ export default function LoginPage() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="form-section" noValidate>
+            <form onSubmit={handleLogin} className="form-section" noValidate>
               {/* Username */}
               <div className="form-label-wrap">
                 <label
@@ -703,7 +712,7 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setFocusedField("email")}
+                    onFocus={() => setFocusedField("username")}
                     onBlur={() => setFocusedField(null)}
                     autoComplete="email"
                     required

@@ -4,6 +4,7 @@ from .routers import user
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import analytics
 from .routers import feedback
+from app.routers import ai
 
 # Base.metadata.create_all(bind=engine)
 
@@ -16,7 +17,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,6 +25,7 @@ app.add_middleware(
 app.include_router(user.router)
 app.include_router(analytics.router)
 app.include_router(feedback.router)
+app.include_router(ai.router)
 
 @app.get("/")
 def root():

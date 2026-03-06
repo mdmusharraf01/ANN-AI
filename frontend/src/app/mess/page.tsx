@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
 import {
   Star,
   MessageCircle,
@@ -144,6 +145,13 @@ export default function MessDashboard() {
     reason: "Overproduction",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [prediction, setPrediction] = useState<{
+  predicted_attendance: number;
+  crowd_level: string;
+  suggested_preparation_index: number;
+} | null>(null);
+
+const [predictionLoading, setPredictionLoading] = useState(true);
 
   const handleSubmit = () => {
     if (!wasteForm.quantity) return;
@@ -176,6 +184,44 @@ const handleLogout = () => {
 
   router.replace("/login");
 };
+
+useEffect(() => {
+  const fetchPrediction = async () => {
+    try {
+      setPredictionLoading(true);
+
+      const res = await fetch(`${API_BASE}/ai/predict-demand`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          day: "Monday",
+          meal_type: "Lunch",
+          prev_attendance: 180,
+          avg_rating: 4.1,
+          complaint_count: 5,
+          previous_waste_kg: 8.2,
+          is_weekend: 0,
+          is_special_day: 0,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch AI prediction");
+      }
+
+      const data = await res.json();
+      setPrediction(data);
+    } catch (error) {
+      console.error("AI prediction error:", error);
+    } finally {
+      setPredictionLoading(false);
+    }
+  };
+
+  fetchPrediction();
+}, []);
 
 useEffect(() => {
   const token = localStorage.getItem("access_token");
@@ -388,7 +434,66 @@ useEffect(() => {
             animate="show"
             className="flex flex-col gap-6"
           >
+             {/* AI Prediction Card */}
+<motion.div variants={itemVariants}>
+  <GlassCard className="p-6">
+    <SectionHeading icon={ChefHat} title="AI Demand Prediction" />
 
+    {predictionLoading ? (
+      <div className="text-sm text-white/40">Loading AI prediction...</div>
+    ) : prediction ? (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-white/35 mb-1">Predicted Attendance</p>
+            <div className="flex items-end gap-1.5">
+              <span className="text-4xl font-bold text-teal-400">
+                {prediction.predicted_attendance}
+              </span>
+              <span className="text-base text-white/40 mb-1">students</span>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <p className="text-xs text-white/35 mb-1">Crowd Level</p>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
+                prediction.crowd_level === "high"
+                  ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                  : prediction.crowd_level === "medium"
+                  ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                  : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+              }`}
+            >
+              {prediction.crowd_level}
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs text-white/35 mb-2">Preparation Index</p>
+          <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-400"
+              style={{ width: `${Math.min(prediction.suggested_preparation_index * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-white/30 mt-2">
+            Recommended Prep Level: {Math.round(prediction.suggested_preparation_index * 100)}%
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-teal-500/20 bg-teal-500/10 p-3">
+          <p className="text-xs text-teal-200 leading-relaxed">
+            AI Alert: Expected {prediction.crowd_level} crowd for the next meal. Prepare food according to the predicted attendance to reduce waste and avoid shortages.
+          </p>
+        </div>
+      </div>
+    ) : (
+      <div className="text-sm text-rose-300">Could not load AI prediction.</div>
+    )}
+  </GlassCard>
+</motion.div>
             {/* Crowd Forecast */}
             <motion.div variants={itemVariants}>
               <GlassCard className="p-6">
