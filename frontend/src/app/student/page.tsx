@@ -145,7 +145,6 @@ const SUGGESTIONS: Suggestion[] = [
 
 const QUICK_CHIPS = ["Too Salty", "Perfect", "Need More Veg", "Loved It"];
 const WASTE_PERCENT = 72;
-
 // ─── SHIMMER SKELETON ─────────────────────────────────────────────────────────
 function Shimmer({ className = "" }: { className?: string }) {
   return (
@@ -248,7 +247,7 @@ function useCountdown(targetHour: number, targetMin: number) {
 function TimerBlock({ value, label }: { value: number; label: string }) {
   const [flipping, setFlipping] = useState(false);
   const prev = useRef(value);
-
+  
   useEffect(() => {
     setFlipping(prev.current !== value);
     prev.current = value;
@@ -804,8 +803,13 @@ export default function StudentPage() {
   const [fabOpen, setFabOpen] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(0);
   const countdown = useCountdown(19, 30);
+  const [chatInput, setChatInput] = useState("");
+const [chatMessages, setChatMessages] = useState<
+  { role: "user" | "bot"; text: string }[]
+>([]);
+const [chatLoading, setChatLoading] = useState(false);
     const router = useRouter();
-
+const [nutritionAlerts, setNutritionAlerts] = useState<string[]>([]);
   const handleLogout = () => {
     // clear whatever you stored at login time
     localStorage.removeItem("access_token");
@@ -825,6 +829,30 @@ export default function StudentPage() {
     const id = setInterval(() => setActiveSuggestion((p) => (p + 1) % SUGGESTIONS.length), 3000);
     return () => clearInterval(id);
   }, []);
+  useEffect(() => {
+  const checkNutrition = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/ai/nutrition-alert`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          protein: 28,
+          carbs: 320,
+        }),
+      });
+
+      const data = await res.json();
+
+      setNutritionAlerts(data.alerts);
+    } catch (err) {
+      console.error("Nutrition alert error", err);
+    }
+  };
+
+  checkNutrition();
+}, []);
 
   const handleSubmit = async () => {
   if (rating === 0) return;
@@ -856,6 +884,47 @@ export default function StudentPage() {
   }
 };
 
+const askAssistant = async () => {
+  if (!chatInput.trim()) return;
+
+  const userMessage = chatInput.trim();
+
+  setChatMessages((prev) => [
+    ...prev,
+    { role: "user", text: userMessage },
+  ]);
+  setChatInput("");
+  setChatLoading(true);
+
+  try {
+    const res = await fetch(`${API_BASE}/ai/student-assistant`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: userMessage }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to get assistant response");
+    }
+
+    const data = await res.json();
+
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "bot", text: data.answer },
+    ]);
+  } catch (error) {
+    console.error("Student assistant error:", error);
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "bot", text: "Assistant is currently unavailable." },
+    ]);
+  } finally {
+    setChatLoading(false);
+  }
+};
   const toggleChip = (c: string) =>
     setChips((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]));
 
@@ -939,7 +1008,7 @@ export default function StudentPage() {
           className="mb-8"
         >
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] tracking-widest text-emerald-400 uppercase">Wednesday, Today</span>
+            <span className="text-[10px] tracking-widest text-emerald-400 uppercase">Saturday, Today</span>
             <span className="text-slate-600">·</span>
             <span className="text-[10px] text-slate-500">Hostel Mess Block B</span>
           </div>
@@ -1236,33 +1305,84 @@ export default function StudentPage() {
               </div>
               <div className="flex flex-col gap-2 mb-3">
                 {[
-                  "What should I eat today?",
-                  "How is my nutrition this week?",
-                  "Will mess be crowded at 1pm?",
-                ].map((q) => (
-                  <button key={q} className="text-left text-[11px] px-3 py-2 rounded-lg bg-white/4 border border-white/8 text-slate-300 hover:border-emerald-500/30 hover:text-white transition-all duration-150">
-                    {q}
-                  </button>
-                ))}
-              </div>
+  "What should I eat today?",
+  "How is my nutrition this week?",
+  "Will mess be crowded at 1pm?",
+].map((q) => (
+  <button
+    key={q}
+    onClick={async () => {
+      setChatMessages((prev) => [...prev, { role: "user", text: q }]);
+      setChatLoading(true);
 
-              {/* Coming soon button */}
-              <button
-                disabled
-                className="w-full text-[11px] px-3 py-2 rounded-lg bg-white/4 border border-white/10 text-slate-500 cursor-not-allowed mb-2"
-              >
-                Coming soon
-              </button>
-              <p className="text-[10px] text-slate-600 text-center leading-relaxed">
-                Chat responses will be enabled in the next build.
-              </p>
+      try {
+        const res = await fetch(`${API_BASE}/ai/student-assistant`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ question: q }),
+        });
+
+        const data = await res.json();
+
+        setChatMessages((prev) => [...prev, { role: "bot", text: data.answer }]);
+      } catch (error) {
+        console.error("Student assistant error:", error);
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "bot", text: "Assistant is currently unavailable." },
+        ]);
+      } finally {
+        setChatLoading(false);
+      }
+    }}
+    className="text-left text-[11px] px-3 py-2 rounded-lg bg-white/4 border border-white/8 text-slate-300 hover:border-emerald-500/30 hover:text-white transition-all duration-150"
+  >
+    {q}
+  </button>
+))}
+              </div>
 
               <div className="flex items-center gap-2 p-2 rounded-xl bg-white/4 border border-white/8 mt-3">
-                <input placeholder="Type your question…" className="flex-1 bg-transparent text-xs text-slate-200 placeholder-slate-600 outline-none" />
-                <button className="text-emerald-400 hover:text-emerald-300 transition-colors">
-                  <Send size={13} />
-                </button>
-              </div>
+  <input
+    value={chatInput}
+    onChange={(e) => setChatInput(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        askAssistant();
+      }
+    }}
+    placeholder="Type your question…"
+    className="flex-1 bg-transparent text-xs text-slate-200 placeholder-slate-600 outline-none"
+  />
+  <button
+    onClick={askAssistant}
+    disabled={chatLoading}
+    className="text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+  >
+    <Send size={13} />
+  </button>
+</div>
+<div className="max-h-40 overflow-y-auto space-y-2 mb-3">
+  {chatMessages.map((msg, index) => (
+    <div
+      key={index}
+      className={`text-[11px] px-3 py-2 rounded-lg ${
+        msg.role === "user"
+          ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-right"
+          : "bg-white/4 border border-white/8 text-slate-300 text-left"
+      }`}
+    >
+      {msg.text}
+    </div>
+  ))}
+
+  {chatLoading && (
+    <div className="text-[10px] text-slate-500 px-1">Thinking...</div>
+  )}
+</div>
             </motion.div>
           )}
         </AnimatePresence>

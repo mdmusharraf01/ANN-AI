@@ -73,3 +73,61 @@ def get_admin_summary():
         "waste_risk": "Medium",
         "recommendation": "Reduce salt level in lunch meals and monitor waste for the next 2 serving cycles.",
     }
+    
+    
+    
+class StudentAssistantInput(BaseModel):
+    question: str
+
+
+@router.post("/student-assistant")
+def student_assistant(data: StudentAssistantInput):
+    q = data.question.lower()
+
+    if "crowd" in q or "rush" in q or "busy" in q:
+        return {
+            "answer": "Based on today's demand prediction, lunch time may experience higher crowd levels. The best time to visit the mess is usually after 1:45 PM."
+        }
+
+    elif "eat" in q or "recommend" in q or "meal" in q:
+        return {
+            "answer": "Today's balanced option is Dal with rice and curd. It has good protein balance and lower complaint frequency compared to other meals."
+        }
+
+    elif "protein" in q or "nutrition" in q or "healthy" in q:
+        return {
+            "answer": "For higher protein intake choose paneer, curd, eggs, or dal-based meals. Dinner usually offers better protein combinations."
+        }
+
+    elif "complaint" in q or "feedback" in q:
+        return {
+            "answer": "You can submit feedback directly from the student dashboard. Your feedback helps the mess improve food quality and reduce waste."
+        }
+
+    else:
+        return {
+            "answer": "I can help with meal recommendations, crowd timing, nutrition tips, or feedback guidance. Try asking about today's meal or mess crowd."
+        }
+
+class NutritionAlertInput(BaseModel):
+    protein: float
+    carbs: float
+
+
+@router.post("/nutrition-alert")
+def nutrition_alert(data: NutritionAlertInput):
+
+    alerts = []
+
+    if data.protein < 40:
+        alerts.append("Your protein intake today is low. Consider adding paneer, eggs, dal, or curd.")
+
+    if data.carbs > 250:
+        alerts.append("Your carbohydrate intake is high today. Try balancing with more protein or vegetables.")
+
+    if not alerts:
+        alerts.append("Your nutrition balance looks good today.")
+
+    return {
+        "alerts": alerts
+    }

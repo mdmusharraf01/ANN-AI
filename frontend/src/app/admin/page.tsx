@@ -274,15 +274,62 @@ const [adminSummary, setAdminSummary] = useState<{
 const [adminSummaryLoading, setAdminSummaryLoading] = useState(true);
 
   // ── Logout ──────────────────────────────────────────────────────────────────
-  const handleLogout = () => {
-    setLoggingOut(true);
-    setTimeout(() => {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("ann_name");
-      router.replace("/login");
-    }, 600);
-  };
+
+  const handleAdminAction = async (action: string) => {
+  if (action === "Create User") {
+    router.push("/admin/create-user");
+    return;
+  }
+
+  if (action === "Export Report") {
+    try {
+      const res = await fetch(`${API_BASE}/analytics/export-report`);
+
+      if (!res.ok) throw new Error("Failed export");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mess_report.csv";
+      a.click();
+    } catch (err) {
+      console.error(err);
+      alert("Export failed");
+    }
+    return;
+  }
+
+  if (action === "Reset Day") {
+    const confirmReset = confirm("Reset today's mess data?");
+    if (!confirmReset) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/reset-day`, {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Reset failed");
+
+      alert("Day reset successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Reset failed");
+    }
+    return;
+  }
+};
+
+const handleLogout = () => {
+  setLoggingOut(true);
+  setTimeout(() => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("ann_name");
+    router.replace("/login");
+  }, 600);
+};
 
   useEffect(() => {
   const fetchAdminSummary = async () => {
@@ -616,30 +663,35 @@ const [adminSummaryLoading, setAdminSummaryLoading] = useState(true);
             <GlassCard className="p-6">
               <SectionHeading icon={Activity} title="Admin Controls" accent="text-teal-400" />
 
-              <div className="mb-4 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/[0.08] border border-amber-500/20">
-                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <p className="text-xs text-amber-300/70">
-                  Demo mode &mdash; actions are disabled for this preview build
-                </p>
-              </div>
-
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "Create User", icon: UserPlus, accent: "text-violet-400 border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-500/10" },
-                  { label: "Export Report", icon: FileDown, accent: "text-teal-400 border-teal-500/20 hover:border-teal-500/40 hover:bg-teal-500/10" },
-                  { label: "Reset Day", icon: RefreshCw, accent: "text-rose-400 border-rose-500/20 hover:border-rose-500/40 hover:bg-rose-500/10" },
-                ].map((btn) => {
+  {
+    label: "Create User",
+    icon: UserPlus,
+    accent: "text-violet-300 border-violet-500/25 bg-violet-500/[0.05]",
+  },
+  {
+    label: "Export Report",
+    icon: FileDown,
+    accent: "text-teal-300 border-teal-500/25 bg-teal-500/[0.05]",
+  },
+  {
+    label: "Reset Day",
+    icon: RefreshCw,
+    accent: "text-rose-300 border-rose-500/25 bg-rose-500/[0.05]",
+  },
+].map((btn) => {
                   const Icon = btn.icon;
                   return (
                     <motion.button
                       key={btn.label}
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
-                      disabled
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border bg-white/[0.03] opacity-50 cursor-not-allowed transition-all duration-200 ${btn.accent}`}
+                      onClick={() => handleAdminAction(btn.label)}
+                      className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border bg-white/[0.04] cursor-not-allowed transition-all duration-200 hover:scale-[1.03]${btn.accent}`}
                     >
-                      <Icon className="w-5 h-5" />
-                      <span className="text-[11px] font-medium text-white/60 text-center leading-tight">
+                      <Icon className="w-5 h-5 opacity-90" />
+                      <span className="text-[11px] font-semibold text-white/80 text-center leading-tight">
                         {btn.label}
                       </span>
                     </motion.button>
