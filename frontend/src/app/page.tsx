@@ -902,22 +902,44 @@ export default function LandingPage() {
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-white/[0.05] py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/15">
-              <Cpu className="w-3.5 h-3.5 text-violet-400" />
-            </div>
-            <span className="text-sm font-bold text-white/50">ANN-AI</span>
-          </div>
-          <p className="text-xs text-white/25 text-center">
-            Smart Mess Management System &mdash; Built for Hackathon 2025
-          </p>
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3 text-white/20" />
-            <span className="text-xs text-white/20">Powered by neural networks</span>
-          </div>
-        </div>
-      </footer>
+  <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col items-center gap-4 text-center">
+
+    {/* Logo */}
+    <div className="flex items-center gap-2.5">
+      <div className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/15">
+        <Cpu className="w-3.5 h-3.5 text-violet-400" />
+      </div>
+      <span className="text-sm font-bold text-white/50">ANN-AI</span>
+    </div>
+
+    {/* Credits */}
+    <p className="text-sm text-white/70">
+      Built by{" "}
+      <a
+        href="https://www.linkedin.com/in/mohammed-musharraf-ali-525874272"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-violet-400 font-semibold hover:text-violet-300 hover:underline transition"
+      >
+        Mohammed Musharraf Ali
+      </a>{" "}
+      & Team ANN-AI
+    </p>
+
+    {/* Description */}
+    <p className="text-xs text-white/25 max-w-xl">
+      Built by a passionate team dedicated to revolutionizing hostel dining experiences.
+      © 2026 ANN-AI. All rights reserved.
+    </p>
+
+    {/* Tech line */}
+    <div className="flex items-center gap-1.5">
+      <Clock className="w-3 h-3 text-white/20" />
+      <span className="text-xs text-white/20">Powered by neural networks</span>
+    </div>
+
+  </div>
+</footer>
     </div>
   );
 }

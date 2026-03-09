@@ -112,22 +112,3 @@ def student_assistant(data: StudentAssistantInput):
 class NutritionAlertInput(BaseModel):
     protein: float
     carbs: float
-
-
-@router.post("/nutrition-alert")
-def nutrition_alert(data: NutritionAlertInput):
-
-    alerts = []
-
-    if data.protein < 40:
-        alerts.append("Your protein intake today is low. Consider adding paneer, eggs, dal, or curd.")
-
-    if data.carbs > 250:
-        alerts.append("Your carbohydrate intake is high today. Try balancing with more protein or vegetables.")
-
-    if not alerts:
-        alerts.append("Your nutrition balance looks good today.")
-
-    return {
-        "alerts": alerts
-    }

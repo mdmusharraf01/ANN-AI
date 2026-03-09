@@ -809,7 +809,6 @@ const [chatMessages, setChatMessages] = useState<
 >([]);
 const [chatLoading, setChatLoading] = useState(false);
     const router = useRouter();
-const [nutritionAlerts, setNutritionAlerts] = useState<string[]>([]);
   const handleLogout = () => {
     // clear whatever you stored at login time
     localStorage.removeItem("access_token");
@@ -829,30 +828,7 @@ const [nutritionAlerts, setNutritionAlerts] = useState<string[]>([]);
     const id = setInterval(() => setActiveSuggestion((p) => (p + 1) % SUGGESTIONS.length), 3000);
     return () => clearInterval(id);
   }, []);
-  useEffect(() => {
-  const checkNutrition = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/ai/nutrition-alert`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          protein: 28,
-          carbs: 320,
-        }),
-      });
-
-      const data = await res.json();
-
-      setNutritionAlerts(data.alerts);
-    } catch (err) {
-      console.error("Nutrition alert error", err);
-    }
-  };
-
-  checkNutrition();
-}, []);
+  
 
   const handleSubmit = async () => {
   if (rating === 0) return;
