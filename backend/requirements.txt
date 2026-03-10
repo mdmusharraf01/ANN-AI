@@ -7,3 +7,7 @@ email-validator
 python-jose
 passlib[bcrypt]
 python-multipart
+python-dotenv
+joblib
+pandas
+scikit-learn
